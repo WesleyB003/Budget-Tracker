@@ -1,4 +1,7 @@
+// Used https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB, and https://www.w3schools.com/html/html5_webworkers.asp for help figuring this one out
+
 let db;
+// Below makes a new db  request for our budget database
 const request = indexedDB.open('budget-tracker', 1);
 
 request.onUpgradeNeeded = function(event) {
@@ -11,7 +14,7 @@ request.onUpgradeNeeded = function(event) {
 request.onSuccess = function(event) {
     db = event.target.result;
     if (navigator.onLine) {
-      sendData();
+      checkData();
     }
 };
   
@@ -26,18 +29,13 @@ function saveRecord(record) {
     entryObjectStore.add(record);
 }
 
-function sendData() {
-    // open a transaction on your pending db
+
+function checkData() {
     const transaction = db.transaction(['new_entry'], 'readWrite');
-  
-    // access your pending object store
     const entryObjectStore = transaction.objectStore('new_entry');
-  
-    // get all records from store and set to a variable
     const getAll = entryObjectStore.getAll();
   
     getAll.onSuccess = function() {
-      // if there was data in indexedDb's store, let's send it to the api server
       if (getAll.result.length > 0) {
         fetch('/api/transaction/bulk', {
           method: 'POST',
@@ -55,7 +53,6 @@ function sendData() {
   
             const transaction = db.transaction(['new_entry'], 'readWrite');
             const entryObjectStore = transaction.objectStore('new_entry');
-            // clear all items in your store
             entryObjectStore.clear();
           })
           .catch(err => {
@@ -65,5 +62,5 @@ function sendData() {
     };
 }
   
-  // listen for app coming back online
-  window.addEventListener('online', sendData);
+  // Big one here, checks for app to come back online
+  window.addEventListener('online', checkData);

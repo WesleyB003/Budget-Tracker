@@ -1,3 +1,5 @@
+// For this page I used https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers for some guidance
+
 const APP_PREFIX = 'BudgetTracker-';
 const VERSION = 'version_01';
 const CACHE_NAME = APP_PREFIX + VERSION;
@@ -33,6 +35,7 @@ self.addEventListener('fetch', function (e) {
   )
 })
 
+// Retrieves static assets from the cache storage in the browser
 self.addEventListener('install', function (e) {
   e.waitUntil(
     caches.open(CACHE_NAME).then(function (cache) {
