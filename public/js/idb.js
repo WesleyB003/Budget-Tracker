@@ -1,38 +1,34 @@
 let db;
 const request = indexedDB.open('budget-tracker', 1);
 
-request.onupgradeneeded = function(event) {
+request.onUpgradeNeeded = function(event) {
     const db = event.target.result;
     db.createObjectStore('new_entry', { autoIncrement: true });
 };
 
-request.onsuccess = function(event) {
-    // when db is successfully created with its object store (from onupgradedneeded event above), save reference to db in global variable
+// This function will check to see if the db is created with an object store, then save the reference in the global variable
+// Then if the app if online it'll send all local data to api
+request.onSuccess = function(event) {
     db = event.target.result;
-  
-    // check if app is online, if yes run checkDatabase() function to send all local db data to api
     if (navigator.onLine) {
-      uploadEntry();
+      sendData();
     }
 };
   
-request.onerror = function(event) {
-    // log error here
+request.onError = function(event) {
     console.log(event.target.errorCode);
 };
 
+// Makes a transaction on db with readWrite
 function saveRecord(record) {
-    const transaction = db.transaction(['new_entry'], 'readwrite');
-  
+    const transaction = db.transaction(['new_entry'], 'readWrite');
     const entryObjectStore = transaction.objectStore('new_entry');
-  
-    // add record to your store with add method.
     entryObjectStore.add(record);
 }
 
-function uploadEntry() {
+function sendData() {
     // open a transaction on your pending db
-    const transaction = db.transaction(['new_entry'], 'readwrite');
+    const transaction = db.transaction(['new_entry'], 'readWrite');
   
     // access your pending object store
     const entryObjectStore = transaction.objectStore('new_entry');
@@ -40,7 +36,7 @@ function uploadEntry() {
     // get all records from store and set to a variable
     const getAll = entryObjectStore.getAll();
   
-    getAll.onsuccess = function() {
+    getAll.onSuccess = function() {
       // if there was data in indexedDb's store, let's send it to the api server
       if (getAll.result.length > 0) {
         fetch('/api/transaction/bulk', {
@@ -57,13 +53,12 @@ function uploadEntry() {
               throw new Error(serverResponse);
             }
   
-            const transaction = db.transaction(['new_entry'], 'readwrite');
+            const transaction = db.transaction(['new_entry'], 'readWrite');
             const entryObjectStore = transaction.objectStore('new_entry');
             // clear all items in your store
             entryObjectStore.clear();
           })
           .catch(err => {
-            // set reference to redirect back here
             console.log(err);
           });
       }
@@ -71,4 +66,4 @@ function uploadEntry() {
 }
   
   // listen for app coming back online
-  window.addEventListener('online', uploadEntry);
+  window.addEventListener('online', sendData);
